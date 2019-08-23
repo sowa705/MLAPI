@@ -7,7 +7,7 @@ namespace MLAPI.Transports.Multiplex
     /// <summary>
     /// Multiplex transport adapter.
     /// </summary>
-    public class MultiplexTransportAdapter : Transport
+    public abstract class MultiplexTransportAdapter : Transport
     {
         /// <summary>
         /// The method to use to distribute the transport connectionIds in a fixed size 64 bit integer.

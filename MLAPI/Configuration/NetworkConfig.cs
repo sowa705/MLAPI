@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
 using MLAPI.Transports;
 using BitStream = MLAPI.Serialization.BitStream;
 using System.Security.Cryptography.X509Certificates;
 using MLAPI.Hashing;
 using MLAPI.Serialization.Pooled;
-using UnityEngine.Serialization;
 
 namespace MLAPI.Configuration
 {

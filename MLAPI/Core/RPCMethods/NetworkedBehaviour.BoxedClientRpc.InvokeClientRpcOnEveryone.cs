@@ -1,9 +1,9 @@
 using MLAPI.Security;
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI
 {
-    public abstract partial class NetworkedBehaviour : MonoBehaviour
+    public abstract partial class NetworkedBehaviour : ObjectComponent
     {
         #pragma warning disable 1591
         public void InvokeClientRpcOnEveryone(RpcMethod method, string channel = null, SecuritySendFlags security = SecuritySendFlags.None)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using MLAPI.Collections;
 using MLAPI.Configuration;
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI.Profiling
 {
@@ -104,7 +104,7 @@ namespace MLAPI.Profiling
             ProfilerTick tick = new ProfilerTick()
             {
                 Type = type,
-                Frame = Time.frameCount,
+                Frame = GameEngine.TimeManager.FrameNumber,
                 EventId = EventIdCounter
             };
             EventIdCounter++;

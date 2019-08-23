@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using MLAPI.Reflection;
-using UnityEngine;
 
 namespace MLAPI.Serialization
 {

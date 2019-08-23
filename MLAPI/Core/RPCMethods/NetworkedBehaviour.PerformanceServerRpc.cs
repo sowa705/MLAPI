@@ -3,11 +3,11 @@ using System.ComponentModel;
 using System.IO;
 using MLAPI.Messaging;
 using MLAPI.Security;
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI
 {
-    public abstract partial class NetworkedBehaviour : MonoBehaviour
+    public abstract partial class NetworkedBehaviour : ObjectComponent
     {
         #pragma warning disable 1591
         [EditorBrowsable(EditorBrowsableState.Never)]

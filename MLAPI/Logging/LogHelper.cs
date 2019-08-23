@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace MLAPI.Logging
+﻿namespace MLAPI.Logging
 {
     /// <summary>
     /// Helper class for logging

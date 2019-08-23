@@ -1,8 +1,8 @@
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI
 {
-    public abstract partial class NetworkedBehaviour : MonoBehaviour
+    public abstract partial class NetworkedBehaviour : ObjectComponent
     {
         /// <exclude />
         public delegate void RpcMethod();

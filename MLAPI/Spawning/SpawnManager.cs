@@ -2,16 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using MLAPI.Configuration;
+using MLAPI.Engine;
 using MLAPI.Exceptions;
 using MLAPI.Hashing;
-using MLAPI.Internal;
 using MLAPI.Logging;
 using MLAPI.Messaging;
 using MLAPI.SceneManagement;
 using MLAPI.Security;
-using MLAPI.Serialization;
 using MLAPI.Serialization.Pooled;
-using UnityEngine;
 
 namespace MLAPI.Spawning
 {
@@ -101,7 +99,7 @@ namespace MLAPI.Spawning
         private static ulong networkObjectIdCounter;
         internal static ulong GetNetworkObjectId()
         {
-            if (releasedNetworkObjectIds.Count > 0 && NetworkingManager.Singleton.NetworkConfig.RecycleNetworkIds && (Time.unscaledTime - releasedNetworkObjectIds.Peek().ReleaseTime) >= NetworkingManager.Singleton.NetworkConfig.NetworkIdRecycleDelay)
+            if (releasedNetworkObjectIds.Count > 0 && NetworkingManager.Singleton.NetworkConfig.RecycleNetworkIds && (GameEngine.TimeManager.Time - releasedNetworkObjectIds.Peek().ReleaseTime) >= NetworkingManager.Singleton.NetworkConfig.NetworkIdRecycleDelay)
             {
                 return releasedNetworkObjectIds.Dequeue().NetworkId;
             }
@@ -252,34 +250,34 @@ namespace MLAPI.Spawning
                 // Create the object
                 if (customSpawnHandlers.ContainsKey(prefabHash))
                 {
-                    NetworkedObject networkedObject = customSpawnHandlers[prefabHash](position.GetValueOrDefault(Vector3.zero), rotation.GetValueOrDefault(Quaternion.identity));
+                    NetworkedObject networkedObject = customSpawnHandlers[prefabHash](position.GetValueOrDefault(Vector3.Zero), rotation.GetValueOrDefault(Quaternion.Identity));
 
                     if (parent != null)
                     {
-                        networkedObject.transform.SetParent(parent.transform, true);
+                        networkedObject.PhysicalObject.Parent = parent.PhysicalObject;
                     }
 
                     if (NetworkSceneManager.isSpawnedObjectsPendingInDontDestroyOnLoad)
                     {
-                        GameObject.DontDestroyOnLoad(networkedObject.gameObject);
+                        GameEngine.ObjectManager.DontDestroyOnLoad(networkedObject.PhysicalObject);
                     }
 
                     return networkedObject;
                 }
                 else
                 {
-                    GameObject prefab = NetworkingManager.Singleton.NetworkConfig.NetworkedPrefabs[GetNetworkedPrefabIndexOfHash(prefabHash)].Prefab;
+                    PhysicalObject prefab = NetworkingManager.Singleton.NetworkConfig.NetworkedPrefabs[GetNetworkedPrefabIndexOfHash(prefabHash)].Prefab;
 
-                    NetworkedObject networkedObject = ((position == null && rotation == null) ? MonoBehaviour.Instantiate(prefab) : MonoBehaviour.Instantiate(prefab, position.GetValueOrDefault(Vector3.zero), rotation.GetValueOrDefault(Quaternion.identity))).GetComponent<NetworkedObject>();
+                    NetworkedObject networkedObject = ((position == null && rotation == null) ? GameEngine.ObjectManager.Instantiate(prefab) : GameEngine.ObjectManager.Instantiate(prefab, position.GetValueOrDefault(Vector3.Zero), rotation.GetValueOrDefault(Quaternion.Identity))).GetComponent<NetworkedObject>();
 
                     if (parent != null)
                     {
-                        networkedObject.transform.SetParent(parent.transform, true);
+                        networkedObject.PhysicalObject.Parent = parent.PhysicalObject;
                     }
 
                     if (NetworkSceneManager.isSpawnedObjectsPendingInDontDestroyOnLoad)
                     {
-                        GameObject.DontDestroyOnLoad(networkedObject.gameObject);
+                        GameEngine.ObjectManager.DontDestroyOnLoad(networkedObject.PhysicalObject);
                     }
 
                     return networkedObject;
@@ -300,7 +298,7 @@ namespace MLAPI.Spawning
 
                 if (parent != null)
                 {
-                    networkedObject.transform.SetParent(parent.transform, true);
+                    networkedObject.PhysicalObject.Parent = parent.PhysicalObject;
                 }
 
                 return networkedObject;
@@ -404,9 +402,9 @@ namespace MLAPI.Spawning
 
                 NetworkedObject parent = null;
 
-                if (!netObject.AlwaysReplicateAsRoot && netObject.transform.parent != null)
+                if (!netObject.AlwaysReplicateAsRoot && netObject.PhysicalObject.Parent != null)
                 {
-                    parent = netObject.transform.parent.GetComponent<NetworkedObject>();
+                    parent = netObject.PhysicalObject.Parent.GetComponent<NetworkedObject>();
                 }
 
                 if (parent == null)
@@ -440,14 +438,12 @@ namespace MLAPI.Spawning
                 if (netObject.IncludeTransformWhenSpawning == null || netObject.IncludeTransformWhenSpawning(clientId))
                 {
                     writer.WriteBool(true);
-                    writer.WriteSinglePacked(netObject.transform.position.x);
-                    writer.WriteSinglePacked(netObject.transform.position.y);
-                    writer.WriteSinglePacked(netObject.transform.position.z);
 
-                    writer.WriteSinglePacked(netObject.transform.rotation.eulerAngles.x);
-                    writer.WriteSinglePacked(netObject.transform.rotation.eulerAngles.y);
-                    writer.WriteSinglePacked(netObject.transform.rotation.eulerAngles.z);
-                } else
+                    writer.WriteVector3Packed(netObject.PhysicalObject.Position);
+
+                    writer.WriteRotationPacked(netObject.PhysicalObject.Rotation);
+                } 
+                else
                 {
                     writer.WriteBool(false);
                 }
@@ -510,7 +506,7 @@ namespace MLAPI.Spawning
                     }
                     else
                     {
-                        MonoBehaviour.Destroy(SpawnedObjectsList[i].gameObject);
+                        GameEngine.ObjectManager.Destroy(SpawnedObjectsList[i].PhysicalObject);
                     }
                 }
             }
@@ -518,7 +514,7 @@ namespace MLAPI.Spawning
 
         internal static void DestroyNonSceneObjects()
         {
-            NetworkedObject[] netObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+            NetworkedObject[] netObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
             for (int i = 0; i < netObjects.Length; i++)
             {
@@ -531,7 +527,7 @@ namespace MLAPI.Spawning
                     }
                     else
                     {
-                        MonoBehaviour.Destroy(netObjects[i].gameObject);
+                        GameEngine.ObjectManager.Destroy(netObjects[i].PhysicalObject);
                     }
                 }
             }
@@ -539,7 +535,7 @@ namespace MLAPI.Spawning
 
         internal static void DestroySceneObjects()
         {
-            NetworkedObject[] netObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+            NetworkedObject[] netObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
             for (int i = 0; i < netObjects.Length; i++)
             {
@@ -552,7 +548,7 @@ namespace MLAPI.Spawning
                     }
                     else
                     {
-                        MonoBehaviour.Destroy(netObjects[i].gameObject);
+                        GameEngine.ObjectManager.Destroy(netObjects[i].PhysicalObject);
                     }
                 }
             }
@@ -560,7 +556,7 @@ namespace MLAPI.Spawning
 
         internal static void ServerSpawnSceneObjectsOnStartSweep()
         {
-            NetworkedObject[] networkedObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+            NetworkedObject[] networkedObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
             for (int i = 0; i < networkedObjects.Length; i++)
             {
@@ -574,7 +570,7 @@ namespace MLAPI.Spawning
         internal static void ClientCollectSoftSyncSceneObjectSweep(NetworkedObject[] networkedObjects)
         {
             if (networkedObjects == null)
-                networkedObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+                networkedObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
             for (int i = 0; i < networkedObjects.Length; i++)
             {
@@ -613,7 +609,7 @@ namespace MLAPI.Spawning
                     releasedNetworkObjectIds.Enqueue(new ReleasedNetworkId()
                     {
                         NetworkId = networkId,
-                        ReleaseTime = Time.unscaledTime
+                        ReleaseTime = GameEngine.TimeManager.Time
                     });
                 }
 
@@ -631,7 +627,7 @@ namespace MLAPI.Spawning
                 }
             }
 
-            GameObject go = SpawnedObjects[networkId].gameObject;
+            PhysicalObject go = SpawnedObjects[networkId].PhysicalObject;
 
             if (destroyGameObject && go != null)
             {
@@ -642,7 +638,7 @@ namespace MLAPI.Spawning
                 }
                 else
                 {
-                    MonoBehaviour.Destroy(go);
+                    GameEngine.ObjectManager.Destroy(go);
                 }
             }
 

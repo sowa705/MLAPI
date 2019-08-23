@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using MLAPI.Collections;
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI.LagCompensation
 {
@@ -11,7 +11,7 @@ namespace MLAPI.LagCompensation
     /// A component used for lag compensation. Each object with this component will get tracked
     /// </summary>
     [AddComponentMenu("MLAPI/TrackedObject", -98)]
-    public class TrackedObject : MonoBehaviour
+    public abstract class TrackedObject : ObjectComponent
     {
         internal Dictionary<float, TrackedPointData> FrameData = new Dictionary<float, TrackedPointData>();
         internal FixedQueue<float> Framekeys;
@@ -64,8 +64,8 @@ namespace MLAPI.LagCompensation
 
         internal void ReverseTransform(float secondsAgo)
         {
-            savedPosition = transform.position;
-            savedRotation = transform.rotation;
+            savedPosition = PhysicalObject.Position;
+            savedRotation = PhysicalObject.Rotation;
 
             float currentTime = NetworkingManager.Singleton.NetworkTime;
             float targetTime = currentTime - secondsAgo;
@@ -85,14 +85,15 @@ namespace MLAPI.LagCompensation
             float timeBetweenFrames = nextTime - previousTime;
             float timeAwayFromPrevious = currentTime - previousTime;
             float lerpProgress = timeAwayFromPrevious / timeBetweenFrames;
-            transform.position = Vector3.Lerp(FrameData[previousTime].position, FrameData[nextTime].position, lerpProgress);
-            transform.rotation = Quaternion.Slerp(FrameData[previousTime].rotation, FrameData[nextTime].rotation, lerpProgress);
+
+            PhysicalObject.Position = Vector3.Lerp(FrameData[previousTime].position, FrameData[nextTime].position, lerpProgress);
+            PhysicalObject.Rotation = Quaternion.Slerp(FrameData[previousTime].rotation, FrameData[nextTime].rotation, lerpProgress);
         }
 
         internal void ResetStateTransform()
         {
-            transform.position = savedPosition;
-            transform.rotation = savedRotation;
+            PhysicalObject.Position = savedPosition;
+            PhysicalObject.Rotation = savedRotation;
         }
 
         void Start()
@@ -114,9 +115,10 @@ namespace MLAPI.LagCompensation
 
             FrameData.Add(NetworkingManager.Singleton.NetworkTime, new TrackedPointData()
             {
-                position = transform.position,
-                rotation = transform.rotation
+                position = PhysicalObject.Position,
+                rotation = PhysicalObject.Rotation
             });
+
             Framekeys.Enqueue(NetworkingManager.Singleton.NetworkTime);
         }
     }

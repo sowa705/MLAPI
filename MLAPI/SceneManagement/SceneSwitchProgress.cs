@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using UnityEngine;
-using AsyncOperation = UnityEngine.AsyncOperation;
+using static MLAPI.Engine.SceneManager;
 
 namespace MLAPI.SceneManagement
 {
@@ -59,7 +57,7 @@ namespace MLAPI.SceneManagement
         internal Guid guid { get; } = Guid.NewGuid();
 
         private Coroutine timeOutCoroutine;
-        private AsyncOperation sceneLoadOperation;
+        private AsyncProgress sceneLoadOperation;
 
         internal SceneSwitchProgress()
         {
@@ -80,15 +78,15 @@ namespace MLAPI.SceneManagement
             CheckCompletion();
         }
 
-        internal void SetSceneLoadOperation(AsyncOperation sceneLoadOperation)
+        internal void SetSceneLoadOperation(AsyncProgress sceneLoadOperation)
         {
             this.sceneLoadOperation = sceneLoadOperation;
-            this.sceneLoadOperation.completed += (AsyncOperation operation) => { CheckCompletion(); };
+            this.sceneLoadOperation.OnCompleted += CheckCompletion;
         }
 
         internal void CheckCompletion()
         {
-            if (!IsCompleted && DoneClients.Count == NetworkingManager.Singleton.ConnectedClientsList.Count && sceneLoadOperation.isDone)
+            if (!IsCompleted && DoneClients.Count == NetworkingManager.Singleton.ConnectedClientsList.Count && sceneLoadOperation.IsCompleted)
             {
                 IsCompleted = true;
                 IsAllClientsDoneLoading = true;

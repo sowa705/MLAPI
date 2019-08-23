@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using UnityEngine;
 using System.Reflection;
 using System.Linq;
 using System.IO;
@@ -16,13 +15,14 @@ using MLAPI.Security;
 using MLAPI.Serialization.Pooled;
 using MLAPI.Spawning;
 using BitStream = MLAPI.Serialization.BitStream;
+using MLAPI.Engine;
 
 namespace MLAPI
 {
     /// <summary>
     /// The base class to override to write networked code. Inherits MonoBehaviour
     /// </summary>
-    public abstract partial class NetworkedBehaviour : MonoBehaviour
+    public abstract partial class NetworkedBehaviour : ObjectComponent
     {
         /// <summary>
         /// Gets if the object is the the personal clients player object

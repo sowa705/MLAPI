@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using MLAPI.Configuration;
+using MLAPI.Engine;
 using MLAPI.Exceptions;
 using MLAPI.Hashing;
 using MLAPI.Logging;
@@ -10,7 +11,6 @@ using MLAPI.Messaging;
 using MLAPI.Security;
 using MLAPI.Serialization.Pooled;
 using MLAPI.Spawning;
-using UnityEngine;
 
 namespace MLAPI
 {
@@ -18,7 +18,7 @@ namespace MLAPI
     /// A component used to identify that a GameObject is networked
     /// </summary>
     [AddComponentMenu("MLAPI/NetworkedObject", -99)]
-    public sealed class NetworkedObject : MonoBehaviour
+    public abstract class NetworkedObject : ObjectComponent
     {
         private void OnValidate()
         {
@@ -30,7 +30,7 @@ namespace MLAPI
         {
             if (string.IsNullOrEmpty(PrefabHashGenerator))
             {
-                PrefabHashGenerator = gameObject.name;
+                PrefabHashGenerator = PhysicalObject.Name;
             }
 
             PrefabHash = PrefabHashGenerator.GetStableHash64();
@@ -524,7 +524,7 @@ namespace MLAPI
                 if(_childNetworkedBehaviours == null)
                 {
                     _childNetworkedBehaviours = new List<NetworkedBehaviour>();
-                    NetworkedBehaviour[] behaviours = GetComponentsInChildren<NetworkedBehaviour>(true);
+                    NetworkedBehaviour[] behaviours = PhysicalObject.GetComponentsInChildren<NetworkedBehaviour>(true);
                     for (int i = 0; i < behaviours.Length; i++)
                     {
                         if (behaviours[i].NetworkedObject == this)

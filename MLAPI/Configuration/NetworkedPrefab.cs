@@ -1,6 +1,6 @@
 ﻿using System;
+using MLAPI.Engine;
 using MLAPI.Logging;
-using UnityEngine;
 
 namespace MLAPI.Configuration
 {
@@ -21,7 +21,7 @@ namespace MLAPI.Configuration
                 }
                 else if (Prefab.GetComponent<NetworkedObject>() == null)
                 {
-                    if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The NetworkedPrefab " + Prefab.name + " does not have a NetworkedObject");
+                    if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The NetworkedPrefab " + Prefab.Name + " does not have a NetworkedObject");
                     return 0;
                 }
                 else return Prefab.GetComponent<NetworkedObject>().PrefabHash;
@@ -30,7 +30,7 @@ namespace MLAPI.Configuration
         /// <summary>
         /// The gameobject of the prefab
         /// </summary>
-        public GameObject Prefab;
+        public PhysicalObject Prefab;
         /// <summary>
         /// Whether or not this is a playerPrefab
         /// </summary>

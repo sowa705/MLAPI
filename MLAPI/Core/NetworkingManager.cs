@@ -2,10 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using UnityEngine;
 using System.Linq;
 using MLAPI.Logging;
-using UnityEngine.SceneManagement;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -25,6 +23,7 @@ using MLAPI.Spawning;
 using static MLAPI.Messaging.CustomMessagingManager;
 using MLAPI.Exceptions;
 using MLAPI.Transports.Tasks;
+using MLAPI.Engine;
 
 namespace MLAPI
 {
@@ -32,7 +31,7 @@ namespace MLAPI
     /// The main component of the library
     /// </summary>
     [AddComponentMenu("MLAPI/NetworkingManager", -100)]
-    public class NetworkingManager : MonoBehaviour
+    public abstract class NetworkingManager : ObjectComponent
     {
         /// <summary>
         /// A synchronized time, represents the time in seconds since the server application started. Is replicated across all clients
@@ -245,15 +244,15 @@ namespace MLAPI
             if (NetworkConfig == null)
                 return; //May occur when the component is added
 
-            if (GetComponentInChildren<NetworkedObject>() != null)
+            if (PhysicalObject.GetComponentInChildren<NetworkedObject>() != null)
             {
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The NetworkingManager cannot be a NetworkedObject. This will lead to weird side effects.");
             }
 
-            if (!NetworkConfig.RegisteredScenes.Contains(SceneManager.GetActiveScene().name))
+            if (!NetworkConfig.RegisteredScenes.Contains(GameEngine.SceneManager.GetActiveScene().Name))
             {
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The active scene is not registered as a networked scene. The MLAPI has added it");
-                NetworkConfig.RegisteredScenes.Add(SceneManager.GetActiveScene().name);
+                NetworkConfig.RegisteredScenes.Add(GameEngine.SceneManager.GetActiveScene().Name);
             }
 
             for (int i = 0; i < NetworkConfig.NetworkedPrefabs.Count; i++)
@@ -583,16 +582,15 @@ namespace MLAPI
         {
             if (Singleton != null && Singleton != this)
             {
-                Destroy(this.gameObject);
+                GameEngine.ObjectManager.Destroy(PhysicalObject);
             }
             else
             {
                 Singleton = this;
+
                 if (OnSingletonReady != null) OnSingletonReady();
-                if (DontDestroy)
-                    DontDestroyOnLoad(gameObject);
-                if (RunInBackground)
-                    Application.runInBackground = true;
+                if (DontDestroy) GameEngine.ObjectManager.DontDestroyOnLoad(PhysicalObject);
+                if (RunInBackground) Application.runInBackground = true;
             }
         }
 
@@ -692,11 +690,11 @@ namespace MLAPI
                     NetworkProfiler.EndTick();
                 }
 
-                if (!Mathf.Approximately(networkTimeOffset, currentNetworkTimeOffset)) {
+                if (!MathF.Approximately(networkTimeOffset, currentNetworkTimeOffset)) {
                     // Smear network time adjustments by no more than 200ms per second.  This should help code deal with
                     // changes more gracefully, since the network time will always flow forward at a reasonable pace.
-                    float maxDelta = Mathf.Max(0.001f, 0.2f * Time.unscaledDeltaTime);
-                    currentNetworkTimeOffset += Mathf.Clamp(networkTimeOffset - currentNetworkTimeOffset, -maxDelta, maxDelta);
+                    float maxDelta = Math.Max(0.001f, 0.2f * GameEngine.TimeManager.DeltaTime);
+                    currentNetworkTimeOffset += MathF.Clamp(networkTimeOffset - currentNetworkTimeOffset, -maxDelta, maxDelta);
                 }
             }
         }
@@ -1044,7 +1042,7 @@ namespace MLAPI
                         }
                         else
                         {
-                            Destroy(ConnectedClients[clientId].PlayerObject.gameObject);
+                            GameEngine.ObjectManager.Destroy(ConnectedClients[clientId].PlayerObject.PhysicalObject);
                         }
                     }
 
@@ -1061,7 +1059,7 @@ namespace MLAPI
                                 }
                                 else
                                 {
-                                    Destroy(ConnectedClients[clientId].OwnedObjects[i].gameObject);
+                                    GameEngine.ObjectManager.Destroy(ConnectedClients[clientId].OwnedObjects[i].PhysicalObject);
                                 }
                             }
                             else
@@ -1098,7 +1096,7 @@ namespace MLAPI
             {
                 using (PooledBitWriter writer = PooledBitWriter.Get(stream))
                 {
-                    writer.WriteSinglePacked(Time.realtimeSinceStartup);
+                    writer.WriteSinglePacked(GameEngine.TimeManager.RealTimeSinceStartup);
                     InternalMessageSender.Send(MLAPIConstants.MLAPI_TIME_SYNC, "MLAPI_TIME_SYNC", stream, SecuritySendFlags.None, null);
                 }
             }
@@ -1157,7 +1155,7 @@ namespace MLAPI
                         writer.WriteUInt32Packed(NetworkSceneManager.currentSceneIndex);
                         writer.WriteByteArray(NetworkSceneManager.currentSceneSwitchProgressGuid.ToByteArray());
 
-                        writer.WriteSinglePacked(Time.realtimeSinceStartup);
+                        writer.WriteSinglePacked(GameEngine.TimeManager.RealTimeSinceStartup);
 
                         writer.WriteUInt32Packed((uint)_observedObjects.Count);
 
@@ -1170,9 +1168,9 @@ namespace MLAPI
 
                             NetworkedObject parent = null;
 
-                            if (!observedObject.AlwaysReplicateAsRoot && observedObject.transform.parent != null)
+                            if (!observedObject.AlwaysReplicateAsRoot && observedObject.PhysicalObject.Parent != null)
                             {
-                                parent = observedObject.transform.parent.GetComponent<NetworkedObject>();
+                                parent = observedObject.PhysicalObject.Parent.GetComponent<NetworkedObject>();
                             }
 
                             if (parent == null)
@@ -1207,13 +1205,10 @@ namespace MLAPI
                             if (observedObject.IncludeTransformWhenSpawning == null || observedObject.IncludeTransformWhenSpawning(clientId))
                             {
                                 writer.WriteBool(true);
-                                writer.WriteSinglePacked(observedObject.transform.position.x);
-                                writer.WriteSinglePacked(observedObject.transform.position.y);
-                                writer.WriteSinglePacked(observedObject.transform.position.z);
 
-                                writer.WriteSinglePacked(observedObject.transform.rotation.eulerAngles.x);
-                                writer.WriteSinglePacked(observedObject.transform.rotation.eulerAngles.y);
-                                writer.WriteSinglePacked(observedObject.transform.rotation.eulerAngles.z);
+                                writer.WriteVector3Packed(observedObject.PhysicalObject.Position);
+
+                                writer.WriteRotationPacked(observedObject.PhysicalObject.Rotation);
                             }
                             else
                             {
@@ -1265,13 +1260,10 @@ namespace MLAPI
                             if (ConnectedClients[clientId].PlayerObject.IncludeTransformWhenSpawning == null || ConnectedClients[clientId].PlayerObject.IncludeTransformWhenSpawning(clientId))
                             {
                                 writer.WriteBool(true);
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.position.x);
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.position.y);
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.position.z);
 
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.rotation.eulerAngles.x);
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.rotation.eulerAngles.y);
-                                writer.WriteSinglePacked(ConnectedClients[clientId].PlayerObject.transform.rotation.eulerAngles.z);
+                                writer.WriteVector3Packed(ConnectedClients[clientId].PlayerObject.PhysicalObject.Position);
+
+                                writer.WriteRotationPacked(ConnectedClients[clientId].PlayerObject.PhysicalObject.Rotation);
                             }
                             else
                             {

@@ -3,14 +3,13 @@ using System;
 using System.IO;
 using MLAPI.Configuration;
 using MLAPI.Exceptions;
-using MLAPI.Internal;
 using MLAPI.Logging;
 using MLAPI.Messaging;
 using MLAPI.Security;
 using MLAPI.Serialization.Pooled;
 using MLAPI.Spawning;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+using MLAPI.Engine;
+using static MLAPI.Engine.SceneManager;
 
 namespace MLAPI.SceneManagement
 {
@@ -41,12 +40,12 @@ namespace MLAPI.SceneManagement
 
         internal static void SetCurrentSceneIndex()
         {
-            if (!sceneNameToIndex.ContainsKey(SceneManager.GetActiveScene().name))
+            if (!sceneNameToIndex.ContainsKey(GameEngine.SceneManager.GetActiveScene().Name))
             {
-                if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The current scene (" + SceneManager.GetActiveScene().name + ") is not regisered as a network scene.");
+                if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The current scene (" + GameEngine.SceneManager.GetActiveScene().Name + ") is not regisered as a network scene.");
                 return;
             }
-            currentSceneIndex = sceneNameToIndex[SceneManager.GetActiveScene().name];
+            currentSceneIndex = sceneNameToIndex[GameEngine.SceneManager.GetActiveScene().Name];
             CurrentActiveSceneIndex = currentSceneIndex;
         }
 
@@ -93,7 +92,7 @@ namespace MLAPI.SceneManagement
 
             SpawnManager.ServerDestroySpawnedSceneObjects(); //Destroy current scene objects before switching.
             isSwitching = true;
-            lastScene = SceneManager.GetActiveScene();
+            lastScene = GameEngine.SceneManager.GetActiveScene();
 
             SceneSwitchProgress switchSceneProgress = new SceneSwitchProgress();
             sceneSwitchProgresses.Add(switchSceneProgress.guid, switchSceneProgress);
@@ -105,10 +104,10 @@ namespace MLAPI.SceneManagement
             isSpawnedObjectsPendingInDontDestroyOnLoad = true;
 
             // Switch scene
-            AsyncOperation sceneLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            AsyncProgress sceneLoad = GameEngine.SceneManager.LoadSceneAsync(sceneName);
             nextSceneName = sceneName;
 
-            sceneLoad.completed += (AsyncOperation asyncOp2) => { OnSceneLoaded(switchSceneProgress.guid, null); };
+            sceneLoad.OnCompleted += () => { OnSceneLoaded(switchSceneProgress.guid, null); };
 
             switchSceneProgress.SetSceneLoadOperation(sceneLoad);
 
@@ -123,12 +122,12 @@ namespace MLAPI.SceneManagement
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("Server requested a scene switch to a non registered scene");
                 return;
             }
-            else if (SceneManager.GetActiveScene().name == sceneIndexToString[sceneIndex])
+            else if (GameEngine.SceneManager.GetActiveScene().Name == sceneIndexToString[sceneIndex])
             {
                 return; //This scene is already loaded. This usually happends at first load
             }
 
-            lastScene = SceneManager.GetActiveScene();
+            lastScene = GameEngine.SceneManager.GetActiveScene();
 
             // Move ALL networked objects to the temp scene
             MoveObjectsToDontDestroyOnLoad();
@@ -137,10 +136,10 @@ namespace MLAPI.SceneManagement
 
             string sceneName = sceneIndexToString[sceneIndex];
 
-            AsyncOperation sceneLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            AsyncProgress sceneLoad = GameEngine.SceneManager.LoadSceneAsync(sceneName);
             nextSceneName = sceneName;
 
-            sceneLoad.completed += (AsyncOperation asyncOp2) =>
+            sceneLoad.OnCompleted += () =>
             {
                 OnSceneLoaded(switchSceneGuid, objectStream);
             };
@@ -153,18 +152,18 @@ namespace MLAPI.SceneManagement
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("Server requested a scene switch to a non registered scene");
                 return;
             }
-            else if (SceneManager.GetActiveScene().name == sceneIndexToString[sceneIndex])
+            else if (GameEngine.SceneManager.GetActiveScene().Name == sceneIndexToString[sceneIndex])
             {
                 return; //This scene is already loaded. This usually happends at first load
             }
 
-            lastScene = SceneManager.GetActiveScene();
+            lastScene = GameEngine.SceneManager.GetActiveScene();
             string sceneName = sceneIndexToString[sceneIndex];
             nextSceneName = sceneName;
             CurrentActiveSceneIndex = sceneNameToIndex[sceneName];
 
             isSpawnedObjectsPendingInDontDestroyOnLoad = true;
-            SceneManager.LoadScene(sceneName);
+            GameEngine.SceneManager.LoadScene(sceneName);
 
             using (PooledBitStream stream = PooledBitStream.Get())
             {
@@ -181,8 +180,8 @@ namespace MLAPI.SceneManagement
         private static void OnSceneLoaded(Guid switchSceneGuid, Stream objectStream)
         {
             CurrentActiveSceneIndex = sceneNameToIndex[nextSceneName];
-            Scene nextScene = SceneManager.GetSceneByName(nextSceneName);
-            SceneManager.SetActiveScene(nextScene);
+            Scene nextScene = GameEngine.SceneManager.GetSceneByName(nextSceneName);
+            GameEngine.SceneManager.SetActiveScene(nextScene);
 
             // Move all objects to the new scene
             MoveObjectsToScene(nextScene);
@@ -207,7 +206,7 @@ namespace MLAPI.SceneManagement
             List<NetworkedObject> newSceneObjects = new List<NetworkedObject>();
 
             {
-                NetworkedObject[] networkedObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+                NetworkedObject[] networkedObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
                 for (int i = 0; i < networkedObjects.Length; i++)
                 {
@@ -251,9 +250,9 @@ namespace MLAPI.SceneManagement
 
                                     NetworkedObject parent = null;
 
-                                    if (!newSceneObjects[i].AlwaysReplicateAsRoot && newSceneObjects[i].transform.parent != null)
+                                    if (!newSceneObjects[i].AlwaysReplicateAsRoot && newSceneObjects[i].PhysicalObject.Parent != null)
                                     {
-                                        parent = newSceneObjects[i].transform.parent.GetComponent<NetworkedObject>();
+                                        parent = newSceneObjects[i].PhysicalObject.Parent.GetComponent<NetworkedObject>();
                                     }
 
                                     if (parent == null)
@@ -270,13 +269,9 @@ namespace MLAPI.SceneManagement
                                     {
                                         writer.WriteUInt64Packed(newSceneObjects[i].PrefabHash);
 
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.position.x);
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.position.y);
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.position.z);
+                                        writer.WriteVector3Packed(newSceneObjects[i].PhysicalObject.Position);
 
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.rotation.eulerAngles.x);
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.rotation.eulerAngles.y);
-                                        writer.WriteSinglePacked(newSceneObjects[i].transform.rotation.eulerAngles.z);
+                                        writer.WriteRotationPacked(newSceneObjects[i].PhysicalObject.Rotation);
                                     }
                                     else
                                     {
@@ -350,7 +345,7 @@ namespace MLAPI.SceneManagement
             }
             else
             {
-                NetworkedObject[] networkedObjects = MonoBehaviour.FindObjectsOfType<NetworkedObject>();
+                NetworkedObject[] networkedObjects = GameEngine.ObjectManager.FindObjectsOfType<NetworkedObject>();
 
                 SpawnManager.ClientCollectSoftSyncSceneObjectSweep(networkedObjects);
 
@@ -399,7 +394,7 @@ namespace MLAPI.SceneManagement
 
         internal static bool HasSceneMismatch(uint sceneIndex)
         {
-            return SceneManager.GetActiveScene().name != sceneIndexToString[sceneIndex];
+            return GameEngine.SceneManager.GetActiveScene().Name != sceneIndexToString[sceneIndex];
         }
 
         // Called on server
@@ -435,12 +430,12 @@ namespace MLAPI.SceneManagement
             for (int i = 0; i < objectsToKeep.Count; i++)
             {
                 //In case an object has been set as a child of another object it has to be unchilded in order to be moved from one scene to another.
-                if (objectsToKeep[i].gameObject.transform.parent != null)
+                if (objectsToKeep[i].PhysicalObject.Parent != null)
                 {
-                    objectsToKeep[i].gameObject.transform.parent = null;
+                    objectsToKeep[i].PhysicalObject.Parent = null;
                 }
 
-                MonoBehaviour.DontDestroyOnLoad(objectsToKeep[i].gameObject);
+                GameEngine.ObjectManager.DontDestroyOnLoad(objectsToKeep[i].PhysicalObject);
             }
         }
 
@@ -452,12 +447,12 @@ namespace MLAPI.SceneManagement
             for (int i = 0; i < objectsToKeep.Count; i++)
             {
                 //In case an object has been set as a child of another object it has to be unchilded in order to be moved from one scene to another.
-                if (objectsToKeep[i].gameObject.transform.parent != null)
+                if (objectsToKeep[i].PhysicalObject.Parent != null)
                 {
-                    objectsToKeep[i].gameObject.transform.parent = null;
+                    objectsToKeep[i].PhysicalObject.Parent = null;
                 }
 
-                SceneManager.MoveGameObjectToScene(objectsToKeep[i].gameObject, scene);
+                GameEngine.SceneManager.MovePhysicalObjectToScene(objectsToKeep[i].PhysicalObject, scene);
             }
         }
     }

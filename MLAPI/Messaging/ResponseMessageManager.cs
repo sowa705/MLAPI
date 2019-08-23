@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+using MLAPI.Engine;
 
 namespace MLAPI.Messaging
 {
@@ -18,7 +17,7 @@ namespace MLAPI.Messaging
         
         internal static void CheckTimeouts()
         {
-            while (responseAdded.Count > 0 && Time.unscaledTime - responseAdded[responseAdded.Keys[0]] > pendingResponses[responseAdded.Keys[0]].Timeout)
+            while (responseAdded.Count > 0 && GameEngine.TimeManager.Time - responseAdded[responseAdded.Keys[0]] > pendingResponses[responseAdded.Keys[0]].Timeout)
             {
                 ulong key = responseAdded.Keys[0];
 
@@ -39,7 +38,7 @@ namespace MLAPI.Messaging
         internal static void Add(ulong key, RpcResponseBase value)
         {
             pendingResponses.Add(key, value);
-            responseAdded.Add(key, Time.unscaledTime);
+            responseAdded.Add(key, GameEngine.TimeManager.Time);
         }
 
         internal static void Remove(ulong key)

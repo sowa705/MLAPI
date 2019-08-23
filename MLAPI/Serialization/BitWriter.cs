@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using MLAPI.Reflection;
-using UnityEngine;
 
 namespace MLAPI.Serialization
 {

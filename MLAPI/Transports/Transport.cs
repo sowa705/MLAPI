@@ -1,13 +1,13 @@
 using System;
+using MLAPI.Engine;
 using MLAPI.Transports.Tasks;
-using UnityEngine;
 
 namespace MLAPI.Transports
 {
     /// <summary>
     /// A network transport
     /// </summary>
-    public abstract class Transport : MonoBehaviour
+    public abstract class Transport : ObjectComponent
     {
         /// <summary>
         /// A constant clientId that represents the server.

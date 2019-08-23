@@ -2,8 +2,6 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using UnityEngine;
-
 namespace MLAPI.Security
 {
     internal class EllipticDiffieHellman
