@@ -114,6 +114,10 @@ namespace MLAPI.Configuration
         /// </summary>
         [Tooltip("The amount of seconds between resyncs of NetworkedTime, if enabled")]
         public int TimeResyncInterval = 30;
+
+
+        public bool EnableHostMigration = false;
+
         /// <summary>
         /// Whether or not to enable the NetworkedVar system. This system runs in the Update loop and will degrade performance, but it can be a huge convenience.
         /// Only turn it off if you have no need for the NetworkedVar system.

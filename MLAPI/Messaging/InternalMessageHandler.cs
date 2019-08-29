@@ -14,6 +14,7 @@ using MLAPI.Spawning;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using MLAPI.HostMigration;
 
 namespace MLAPI.Messaging
 {
@@ -203,7 +204,24 @@ namespace MLAPI.Messaging
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 NetworkingManager.Singleton.LocalClientId = reader.ReadUInt64Packed();
-                
+
+                if (NetworkingManager.Singleton.NetworkConfig.EnableHostMigration)
+                {
+                    uint clientCount = reader.ReadUInt32Packed();
+
+                    for (int i = 0; i < clientCount; i++)
+                    {
+                        ulong remoteClientId = reader.ReadUInt64Packed();
+                        ulong migrationKey = reader.ReadUInt64Packed();
+
+                        HostMigrationManager.MigratableClients.Add(new MigratableClient()
+                        {
+                            ClientId = remoteClientId,
+                            MigrationKey = migrationKey
+                        });
+                    }
+                }
+
                 uint sceneIndex = reader.ReadUInt32Packed();
                 Guid sceneSwitchProgressGuid = new Guid(reader.ReadByteArray());
 
@@ -672,6 +690,23 @@ namespace MLAPI.Messaging
                 ulong hash = reader.ReadUInt64Packed();
 
                 CustomMessagingManager.InvokeNamedMessage(hash, clientId, stream);
+            }
+        }
+
+        internal static void HandleAddClient(ulong clientId, Stream stream)
+        {
+            using (PooledBitReader reader = PooledBitReader.Get(stream))
+            {
+                ulong newClientId = reader.ReadUInt64Packed();
+                ulong token = reader.ReadUInt64Packed();
+            }
+        }
+
+        internal static void HandleRemoveClient(ulong clientId, Stream stream)
+        {
+            using (PooledBitReader reader = PooledBitReader.Get(stream))
+            {
+                ulong clientIdToRemove = reader.ReadUInt64Packed();
             }
         }
     }

@@ -30,6 +30,8 @@
         internal const byte MLAPI_UNNAMED_MESSAGE = 20;
         internal const byte MLAPI_DESTROY_OBJECTS = 21;
         internal const byte MLAPI_NAMED_MESSAGE = 22;
+        internal const byte MLAPI_ADD_CLIENT = 23;
+        internal const byte MLAPI_REMOVE_CLIENT = 24;
         internal const byte INVALID = 32;
 
         internal static readonly string[] MESSAGE_NAMES = {
@@ -56,8 +58,8 @@
             "MLAPI_UNNAMED_MESSAGE",
             "MLAPI_DESTROY_OBJECTS",
             "MLAPI_NAMED_MESSAGE",
-            "",
-            "",
+            "MLAPI_ADD_CLIENT",
+            "MLAPI_REMOVE_CLIENT",
             "",
             "",
             "",
