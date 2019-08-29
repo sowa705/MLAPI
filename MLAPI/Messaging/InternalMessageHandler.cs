@@ -52,7 +52,7 @@ namespace MLAPI.Messaging
                     // Read the ECDH
                     // Allocation justification: This runs on client and only once, at initial connection
                     serverDiffieHellmanPublicPart = reader.ReadByteArray();
-                    
+
                     // Verify the key exchange
                     if (NetworkingManager.Singleton.NetworkConfig.SignKeyExchange)
                     {
@@ -152,7 +152,7 @@ namespace MLAPI.Messaging
 
             NetworkingManager.Singleton.PendingClients[clientId].ConnectionState = PendingClient.State.PendingConnection;
             NetworkingManager.Singleton.PendingClients[clientId].KeyExchange = null; // Give to GC
-            
+
             // Send greetings, they have passed all the handshakes
             using (PooledBitStream outStream = PooledBitStream.Get())
             {
@@ -187,7 +187,7 @@ namespace MLAPI.Messaging
                 if (NetworkingManager.Singleton.NetworkConfig.ConnectionApproval)
                 {
                     byte[] connectionBuffer = reader.ReadByteArray();
-                    NetworkingManager.Singleton.ConnectionApprovalCallback(connectionBuffer, clientId, (createPlayerObject, playerPrefabHash, approved, position, rotation) => 
+                    NetworkingManager.Singleton.ConnectionApprovalCallback(connectionBuffer, clientId, (createPlayerObject, playerPrefabHash, approved, position, rotation) =>
                     {
                         NetworkingManager.Singleton.HandleApproval(clientId, createPlayerObject, playerPrefabHash, approved, position, rotation);
                     });
@@ -319,7 +319,7 @@ namespace MLAPI.Messaging
                     }
 
                     onSceneLoaded = (oldScene, newScene) => { OnSceneLoadComplete(); };
-                    
+
                     SceneManager.activeSceneChanged += onSceneLoaded;
 
                     NetworkSceneManager.OnFirstSceneSwitchSync(sceneIndex, sceneSwitchProgressGuid);
@@ -382,7 +382,7 @@ namespace MLAPI.Messaging
 
                 bool hasPayload = reader.ReadBool();
                 int payLoadLength = hasPayload ? reader.ReadInt32Packed() : 0;
-                
+
                 NetworkedObject netObject = SpawnManager.CreateLocalNetworkedObject(softSync, instanceId, prefabHash, parentNetworkId, pos, rot);
                 SpawnManager.SpawnNetworkedObjectLocally(netObject, networkId, softSync, isPlayerObject, ownerId, stream, hasPayload, payLoadLength, true, false);
             }
@@ -403,18 +403,18 @@ namespace MLAPI.Messaging
             {
                 uint sceneIndex = reader.ReadUInt32Packed();
                 Guid switchSceneGuid = new Guid(reader.ReadByteArray());
-                
+
                 Serialization.BitStream objectStream = new Serialization.BitStream();
                 objectStream.CopyUnreadFrom(stream);
                 objectStream.Position = 0;
-                
+
                 NetworkSceneManager.OnSceneSwitch(sceneIndex, switchSceneGuid, objectStream);
             }
         }
 
         internal static void HandleClientSwitchSceneCompleted(ulong clientId, Stream stream)
         {
-            using (PooledBitReader reader = PooledBitReader.Get(stream)) 
+            using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 NetworkSceneManager.OnClientSwitchSceneCompleted(clientId, new Guid(reader.ReadByteArray()));
             }
@@ -426,7 +426,7 @@ namespace MLAPI.Messaging
             {
                 ulong networkId = reader.ReadUInt64Packed();
                 ulong ownerClientId = reader.ReadUInt64Packed();
-                
+
                 if (SpawnManager.SpawnedObjects[networkId].OwnerClientId == NetworkingManager.Singleton.LocalClientId)
                 {
                     //We are current owner.
@@ -446,20 +446,20 @@ namespace MLAPI.Messaging
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ushort objectCount = reader.ReadUInt16Packed();
-                
+
                 for (int i = 0; i < objectCount; i++)
                 {
                     HandleAddObject(clientId, stream);
                 }
             }
         }
-        
+
         internal static void HandleDestroyObjects(ulong clientId, Stream stream)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ushort objectCount = reader.ReadUInt16Packed();
-                
+
                 for (int i = 0; i < objectCount; i++)
                 {
                     HandleDestroyObject(clientId, stream);
@@ -483,7 +483,7 @@ namespace MLAPI.Messaging
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("NetworkedVar delta received but EnableNetworkedVar is false");
                 return;
             }
-            
+
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ulong networkId = reader.ReadUInt64Packed();
@@ -514,7 +514,7 @@ namespace MLAPI.Messaging
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("NetworkedVar update received but EnableNetworkedVar is false");
                 return;
             }
-            
+
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ulong networkId = reader.ReadUInt64Packed();
@@ -537,7 +537,7 @@ namespace MLAPI.Messaging
                 }
             }
         }
-        
+
         internal static void HandleServerRPC(ulong clientId, Stream stream)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -546,8 +546,8 @@ namespace MLAPI.Messaging
                 ushort behaviourId = reader.ReadUInt16Packed();
                 ulong hash = reader.ReadUInt64Packed();
 
-                if (SpawnManager.SpawnedObjects.ContainsKey(networkId)) 
-                { 
+                if (SpawnManager.SpawnedObjects.ContainsKey(networkId))
+                {
                     NetworkedBehaviour behaviour = SpawnManager.SpawnedObjects[networkId].GetBehaviourAtOrderIndex(behaviourId);
                     if (behaviour != null)
                     {
@@ -556,7 +556,7 @@ namespace MLAPI.Messaging
                 }
             }
         }
-        
+
         internal static void HandleServerRPCRequest(ulong clientId, Stream stream, string channelName, SecuritySendFlags security)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -566,8 +566,8 @@ namespace MLAPI.Messaging
                 ulong hash = reader.ReadUInt64Packed();
                 ulong responseId = reader.ReadUInt64Packed();
 
-                if (SpawnManager.SpawnedObjects.ContainsKey(networkId)) 
-                { 
+                if (SpawnManager.SpawnedObjects.ContainsKey(networkId))
+                {
                     NetworkedBehaviour behaviour = SpawnManager.SpawnedObjects[networkId].GetBehaviourAtOrderIndex(behaviourId);
                     if (behaviour != null)
                     {
@@ -580,14 +580,14 @@ namespace MLAPI.Messaging
                                 responseWriter.WriteUInt64Packed(responseId);
                                 responseWriter.WriteObjectPacked(result);
                             }
-                            
+
                             InternalMessageSender.Send(clientId, MLAPIConstants.MLAPI_SERVER_RPC_RESPONSE, channelName, responseStream, security, SpawnManager.SpawnedObjects[networkId]);
                         }
                     }
                 }
             }
         }
-        
+
         internal static void HandleServerRPCResponse(ulong clientId, Stream stream)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -597,16 +597,16 @@ namespace MLAPI.Messaging
                 if (ResponseMessageManager.ContainsKey(responseId))
                 {
                     RpcResponseBase responseBase = ResponseMessageManager.GetByKey(responseId);
-                    
+
                     ResponseMessageManager.Remove(responseId);
-                    
+
                     responseBase.IsDone = true;
                     responseBase.Result = reader.ReadObjectPacked(responseBase.Type);
                     responseBase.IsSuccessful = true;
                 }
             }
         }
-        
+
         internal static void HandleClientRPC(ulong clientId, Stream stream)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -614,8 +614,8 @@ namespace MLAPI.Messaging
                 ulong networkId = reader.ReadUInt64Packed();
                 ushort behaviourId = reader.ReadUInt16Packed();
                 ulong hash = reader.ReadUInt64Packed();
-                
-                if (SpawnManager.SpawnedObjects.ContainsKey(networkId)) 
+
+                if (SpawnManager.SpawnedObjects.ContainsKey(networkId))
                 {
                     NetworkedBehaviour behaviour = SpawnManager.SpawnedObjects[networkId].GetBehaviourAtOrderIndex(behaviourId);
                     if (behaviour != null)
@@ -625,7 +625,7 @@ namespace MLAPI.Messaging
                 }
             }
         }
-        
+
         internal static void HandleClientRPCRequest(ulong clientId, Stream stream, string channelName, SecuritySendFlags security)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -634,14 +634,14 @@ namespace MLAPI.Messaging
                 ushort behaviourId = reader.ReadUInt16Packed();
                 ulong hash = reader.ReadUInt64Packed();
                 ulong responseId = reader.ReadUInt64Packed();
-                
-                if (SpawnManager.SpawnedObjects.ContainsKey(networkId)) 
+
+                if (SpawnManager.SpawnedObjects.ContainsKey(networkId))
                 {
                     NetworkedBehaviour behaviour = SpawnManager.SpawnedObjects[networkId].GetBehaviourAtOrderIndex(behaviourId);
                     if (behaviour != null)
                     {
                         object result = behaviour.OnRemoteClientRPC(hash, clientId, stream);
-                        
+
                         using (PooledBitStream responseStream = PooledBitStream.Get())
                         {
                             using (PooledBitWriter responseWriter = PooledBitWriter.Get(responseStream))
@@ -649,14 +649,14 @@ namespace MLAPI.Messaging
                                 responseWriter.WriteUInt64Packed(responseId);
                                 responseWriter.WriteObjectPacked(result);
                             }
-                            
+
                             InternalMessageSender.Send(clientId, MLAPIConstants.MLAPI_CLIENT_RPC_RESPONSE, channelName, responseStream, security, null);
                         }
                     }
                 }
             }
         }
-        
+
         internal static void HandleClientRPCResponse(ulong clientId, Stream stream)
         {
             using (PooledBitReader reader = PooledBitReader.Get(stream))
@@ -666,18 +666,18 @@ namespace MLAPI.Messaging
                 if (ResponseMessageManager.ContainsKey(responseId))
                 {
                     RpcResponseBase responseBase = ResponseMessageManager.GetByKey(responseId);
-                    
+
                     if (responseBase.ClientId != clientId) return;
-                    
+
                     ResponseMessageManager.Remove(responseId);
-                    
+
                     responseBase.IsDone = true;
                     responseBase.Result = reader.ReadObjectPacked(responseBase.Type);
                     responseBase.IsSuccessful = true;
                 }
             }
         }
-        
+
         internal static void HandleUnnamedMessage(ulong clientId, Stream stream)
         {
             CustomMessagingManager.InvokeUnnamedMessage(clientId, stream);
@@ -698,7 +698,13 @@ namespace MLAPI.Messaging
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ulong newClientId = reader.ReadUInt64Packed();
-                ulong token = reader.ReadUInt64Packed();
+                ulong migrationKey = reader.ReadUInt64Packed();
+
+                HostMigrationManager.MigratableClients.Add(new MigratableClient()
+                {
+                    ClientId = newClientId,
+                    MigrationKey = migrationKey
+                });
             }
         }
 
@@ -707,6 +713,15 @@ namespace MLAPI.Messaging
             using (PooledBitReader reader = PooledBitReader.Get(stream))
             {
                 ulong clientIdToRemove = reader.ReadUInt64Packed();
+
+                for (int i = 0; i < HostMigrationManager.MigratableClients.Count; i++)
+                {
+                    if (HostMigrationManager.MigratableClients[i].ClientId == clientIdToRemove)
+                    {
+                        HostMigrationManager.MigratableClients.RemoveAt(i);
+                        break;
+                    }
+                }
             }
         }
     }
