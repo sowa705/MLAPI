@@ -1633,7 +1633,7 @@ namespace MLAPI.Security
         /// </summary>
         /// <param name="bits"></param>
         /// <param name="rand"></param>
-        public void GenRandomBits(int bits, Random rand)
+        public void GenRandomBits(int bits, System.Random rand)
         {
             int dwords = bits >> 5;
             int remBits = bits & 0x1F;
@@ -1789,7 +1789,7 @@ namespace MLAPI.Security
             int bits = thisVal.BitCount();
             BigInteger a = new BigInteger();
             BigInteger pSub1 = thisVal - (new BigInteger(1));
-            Random rand = new Random();
+            System.Random rand = new System.Random();
 
             for (int round = 0; round < confidence; round++)
             {
@@ -1890,7 +1890,7 @@ namespace MLAPI.Security
 
             int bits = thisVal.BitCount();
             BigInteger a = new BigInteger();
-            Random rand = new Random();
+            System.Random rand = new System.Random();
 
             for (int round = 0; round < confidence; round++)
             {
@@ -1981,7 +1981,7 @@ namespace MLAPI.Security
             BigInteger pSub1 = thisVal - 1;
             BigInteger pSub1Shift = pSub1 >> 1;
 
-            Random rand = new Random();
+            System.Random rand = new System.Random();
 
             for (int round = 0; round < confidence; round++)
             {
@@ -2416,7 +2416,7 @@ namespace MLAPI.Security
         /// <param name="confidence">Number of chosen bases</param>
         /// <param name="rand">Random object</param>
         /// <returns>A probably prime number</returns>
-        public static BigInteger GenPseudoPrime(int bits, int confidence, Random rand)
+        public static BigInteger GenPseudoPrime(int bits, int confidence, System.Random rand)
         {
             BigInteger result = new BigInteger();
             bool done = false;
@@ -2466,7 +2466,7 @@ namespace MLAPI.Security
         /// <param name="bits">Number of bit</param>
         /// <param name="rand">Random object</param>
         /// <returns>Relatively prime number of this</returns>
-        public BigInteger GenCoPrime(int bits, Random rand)
+        public BigInteger GenCoPrime(int bits, System.Random rand)
         {
             bool done = false;
             BigInteger result = new BigInteger();
