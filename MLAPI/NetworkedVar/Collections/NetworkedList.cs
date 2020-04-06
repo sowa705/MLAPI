@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using MLAPI.Serialization;
@@ -89,6 +89,16 @@ namespace MLAPI.NetworkedVar.Collections
             if (Settings.SendTickrate < 0) return false;
             if (NetworkingManager.Singleton.NetworkTime - LastSyncedTime >= (1f / Settings.SendTickrate)) return true;
             return false;
+        }
+        /// <summary>
+        /// This method will mark this list as requiring resync
+        /// </summary>
+        public void MarkDirty()
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                dirtyEvents.Add(new NetworkedListEvent<T>() { eventType = NetworkedListEvent<T>.EventType.Value, value = list[i], index = i });
+            }
         }
 
         /// <inheritdoc />
