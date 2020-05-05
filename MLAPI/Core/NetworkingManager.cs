@@ -270,13 +270,13 @@ namespace MLAPI
             {
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The NetworkingManager cannot be a NetworkedObject. This will lead to weird side effects.");
             }
-
+            /*
             if (!NetworkConfig.RegisteredScenes.Contains(SceneManager.GetActiveScene().name))
             {
                 if (LogHelper.CurrentLogLevel <= LogLevel.Normal) LogHelper.LogWarning("The active scene is not registered as a networked scene. The MLAPI has added it");
                 NetworkConfig.RegisteredScenes.Add(SceneManager.GetActiveScene().name);
             }
-
+            */
             for (int i = 0; i < NetworkConfig.NetworkedPrefabs.Count; i++)
             {
                 if (NetworkConfig.NetworkedPrefabs[i] != null && NetworkConfig.NetworkedPrefabs[i].Prefab != null)

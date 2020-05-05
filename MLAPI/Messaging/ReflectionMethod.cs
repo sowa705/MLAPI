@@ -16,6 +16,7 @@ namespace MLAPI.Messaging
         private readonly int index;
         private readonly Type[] parameterTypes;
         private readonly object[] parameterRefs;
+        readonly bool identified;
 
         internal static ReflectionMethod Create(MethodInfo method, ParameterInfo[] parameters, int index)
         {
@@ -46,6 +47,12 @@ namespace MLAPI.Messaging
             {
                 requireOwnership = serverRpcAttribute.RequireOwnership;
                 serverTarget = true;
+            }
+            else if (attribute is IdentifiedServerRPCAttribute iserverRpcAttribute)
+            {
+                requireOwnership = iserverRpcAttribute.RequireOwnership;
+                serverTarget = true;
+                identified = true;
             }
             else
             {
@@ -107,6 +114,10 @@ namespace MLAPI.Messaging
                     }
                     else
                     {
+                        if (identified)
+                        {
+                            return InvokeIdentifiedReflected(target,userStream,senderClientId);
+                        }
                         return InvokeReflected(target, userStream);
                     }
                 }
@@ -122,6 +133,20 @@ namespace MLAPI.Messaging
                     parameterRefs[i] = reader.ReadObjectPacked(parameterTypes[i]);
                 }
 
+                return method.Invoke(instance, parameterRefs);
+            }
+        }
+
+        private object InvokeIdentifiedReflected(NetworkedBehaviour instance, Stream stream, ulong sender)
+        {
+            using (PooledBitReader reader = PooledBitReader.Get(stream))
+            {
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    parameterRefs[i] = reader.ReadObjectPacked(parameterTypes[i]);
+                }
+                parameterTypes[0] = typeof(ulong);
+                parameterRefs[0] = sender;
                 return method.Invoke(instance, parameterRefs);
             }
         }
